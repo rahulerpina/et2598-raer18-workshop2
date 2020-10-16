@@ -1,0 +1,114 @@
+---
+
+- hosts: webservers
+
+  become: yes
+
+  tasks:
+ 
+  - name: Installing nginx web server on devA devB and devC
+
+    apt:
+
+      name: nginx
+
+      state: present
+
+      update_cache: true
+    notify:
+
+    - start nginx
+
+ 
+
+  - name: Installing php-fpm on devA devB and devC
+
+    apt:
+
+      name: php-fpm
+
+      state: present
+
+      update_cache: true
+
+    notify:
+
+    - start php7.4-fpm
+
+  
+
+  
+  - name: Setting up nginx.conf file at etc/nginx/
+    template:
+       src: "./Nginx.conf"
+       dest: "/etc/nginx/nginx.conf"
+    notify:
+    - restart php7.4-fpm
+    - restart nginx
+
+
+
+  - name: Removing "default" site at etc/nginx/sites-enabled
+    file:
+       path: "/etc/nginx/sites-enabled/default"
+       state: absent
+    notify: 
+    - restart nginx
+
+  - name: Setting up Nginx conf file at etc/nginx/sites-available
+    template:
+       src: "./default"
+       dest: "/etc/nginx/sites-available/default1"
+
+  - name: linking default etc/nginx/sites-available to the etc/nginx/sites-enable
+    file:
+       src: "/etc/nginx/sites-available/default1"
+       dest: "/etc/nginx/sites-enabled/default1"
+       state: link
+    notify: 
+    - restart nginx
+   
+
+  - name: Setting Up index.php Page at root var/www/html
+    template:
+      src: "./index.php"
+      dest: "/var/www/html/index.php"
+    notify:
+    - restart nginx
+    - start nginx
+    - restart php7.4-fpm
+    - start php7.4-fpm 
+
+
+  handlers:
+
+  - name: start php7.4-fpm
+    service:
+
+      name: php7.4-fpm
+
+      state: started
+
+
+
+  - name: start nginx
+    service:
+
+      name: nginx
+
+      state: started
+
+
+  - name: restart php7.4-fpm
+    service:
+
+      name: php7.4-fpm
+
+      state: restarted
+  - name: restart nginx
+
+    service:
+
+      name: nginx
+
+      state: restarted
